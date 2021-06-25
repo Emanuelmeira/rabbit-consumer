@@ -16,15 +16,4 @@ public class RabbitApplication {
 		SpringApplication.run(RabbitApplication.class, args);
 	}
 
-	@Bean
-	public Jackson2JsonMessageConverter producerJackson2MessageConverter() {
-		return new Jackson2JsonMessageConverter();
-	}
-
-	@Bean
-	public RabbitTemplate rabbitTemplate(final ConnectionFactory connectionFactory) {
-		final var rabbitTemplate = new RabbitTemplate(connectionFactory);
-		rabbitTemplate.setMessageConverter(producerJackson2MessageConverter());
-		return rabbitTemplate;
-	}
 }
