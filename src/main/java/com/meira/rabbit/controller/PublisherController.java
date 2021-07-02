@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-
 @RestController
 @RequestMapping("/rabbit")
 public class PublisherController {
@@ -19,15 +18,15 @@ public class PublisherController {
     @PostMapping(value = "/")
     public ResponseEntity<Object> postInRabbit() {
 
-        var p = new Person();
-        p.setId("1");
-        p.setName("Emanuel");
-        p.setIdade(16);
+        var person = new Person();
+        person.setId("1");
+        person.setName("Emanuel");
+        person.setAge(16);
 
-        publisher.send(p);
+        publisher.send(person);
 
-        ResponseEntity<Object> build = ResponseEntity.noContent().build();
-        return build;
+        ResponseEntity<Object> response = ResponseEntity.noContent().build();
+        return response;
     }
 
 }

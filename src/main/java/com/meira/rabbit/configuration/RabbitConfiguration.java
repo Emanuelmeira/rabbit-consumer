@@ -1,11 +1,11 @@
 package com.meira.rabbit.configuration;
 
-
-
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -20,6 +20,16 @@ import java.util.Objects;
 
 @Component
 public class RabbitConfiguration {
+
+    @Value("${spring.rabbit.concurrentConsumers}")
+    private Integer concurrentConsumers;
+
+    @Value("${spring.rabbit.maxConcurrentConsumers}")
+    private Integer maxConcurrentConsumers;
+
+    @Value("${spring.rabbit.prefetchCount}")
+    private Integer prefetchCount;
+
 
     @Value("${spring.rabbitmq.host}")
     private String host;
@@ -36,16 +46,19 @@ public class RabbitConfiguration {
     @Value("${spring.rabbitmq.virtual-host:/}")
     private String virtualHostCustomer;
 
+    @Value("${spring.rabbitmq.context}")
+    private String context;
+
     @Primary
     @Bean(name = "rabbitDefault")
     public RabbitTemplate rabbitTemplate() {
-        return buildRabbitTemplate("default");
+        return buildRabbitTemplate(context);
     }
 
     // ---------------------------  configuration publisher ---------------------------
 
-    private RabbitTemplate buildRabbitTemplate(String virtualHost) {
-        final var rabbitTemplate = new RabbitTemplate(getConnectionFactory(virtualHost));
+    private RabbitTemplate buildRabbitTemplate(String context) {
+        final var rabbitTemplate = new RabbitTemplate(getConnectionFactory(context));
 
         // Para setar trace-id nas mensagens
         // rabbitTemplate.setBeforePublishPostProcessors(this.getMessagePostProcessorBeforePublish());
@@ -55,10 +68,10 @@ public class RabbitConfiguration {
         return rabbitTemplate;
     }
 
-    private CachingConnectionFactory getConnectionFactory(String virtualHost) {
+    private CachingConnectionFactory getConnectionFactory(String context) {
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 
-        if (virtualHost.contains("default")) {
+        if (context.contains("default")) {
             connectionFactory.setHost(host);
             if (Objects.nonNull(port)) {
                 connectionFactory.setPort(port);
@@ -67,9 +80,7 @@ public class RabbitConfiguration {
             connectionFactory.setUsername(username);
             connectionFactory.setPassword(password);
 
-            if (!"/".equals(virtualHostCustomer)) {
-                connectionFactory.setVirtualHost(virtualHostCustomer);
-            }
+            connectionFactory.setVirtualHost(virtualHostCustomer);
         }
 
         return connectionFactory;
@@ -94,12 +105,7 @@ public class RabbitConfiguration {
         var topicExchange = new TopicExchange(exchangeName, true, false);
         rabbitAdmin.declareExchange(topicExchange);
 
-        rabbitAdmin.declareBinding(
-                BindingBuilder
-                        .bind(nameQueue)
-                        .to(topicExchange)
-                        .with(exchangeName)
-        );
+        rabbitAdmin.declareBinding(BindingBuilder.bind(nameQueue).to(topicExchange).with(exchangeName));
 
         return rabbitAdmin;
     }
@@ -109,5 +115,31 @@ public class RabbitConfiguration {
     }
 
     // --------------------------- configuration consumer ---------------------------
+
+    @Primary
+    @Bean(name = "myRabbitListenerContainerFactory")
+    public SimpleRabbitListenerContainerFactory myRabbitListenerContainerFactory(ConnectionFactory connection) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        return getSimpleRabbitListenerContainerFactory(factory, "default");
+    }
+
+    private SimpleRabbitListenerContainerFactory getSimpleRabbitListenerContainerFactory(SimpleRabbitListenerContainerFactory factory, String context) {
+        CachingConnectionFactory connectionFactory = getConnectionFactory(context);
+
+        factory.setConnectionFactory(connectionFactory);
+        factory.setAutoStartup(true);
+        factory.setMaxConcurrentConsumers(maxConcurrentConsumers);
+        factory.setConcurrentConsumers(concurrentConsumers);
+        factory.setMissingQueuesFatal(false);
+        factory.setChannelTransacted(true);
+        factory.setPrefetchCount(prefetchCount);
+        factory.setMessageConverter(producerJackson2MessageConverter());
+
+        // Para setar trace-id nas mensagens
+        //factory.setBeforeSendReplyPostProcessors(this.getMessagePostProcessorBeforePublish());
+        //factory.setAfterReceivePostProcessors(this.getMessagePostProcessorAfterReceive());
+
+        return factory;
+    }
 
 }

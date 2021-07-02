@@ -3,7 +3,7 @@ package com.meira.rabbit.model;
 public class Person {
     private String id;
     private String name;
-    private int idade;
+    private int age;
 
     public String getId() {
         return id;
@@ -21,12 +21,22 @@ public class Person {
         this.name = name;
     }
 
-    public int getIdade() {
-        return idade;
+    public int getAge() {
+        return age;
     }
 
-    public void setIdade(int idade) {
-        this.idade = idade;
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Person(String id, String name, int age) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+    }
+
+    public Person() {
+
     }
 
     @Override
@@ -34,7 +44,7 @@ public class Person {
         return "Person{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", idade=" + idade +
+                ", age=" + age +
                 '}';
     }
 

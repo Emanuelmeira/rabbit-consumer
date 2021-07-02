@@ -13,10 +13,10 @@ public class DefaultPublisher {
     private RabbitTemplate rabbitTemplate;
 
     @Value("${queue.order.name}")
-    private String defaultQueue;
+    private String defaultQueueName;
 
     public void send(Person person){
-        rabbitTemplate.convertAndSend(defaultQueue, person);
+        rabbitTemplate.convertAndSend(defaultQueueName, person);
     }
 
 
